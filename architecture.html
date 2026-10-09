@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusCoin — Architecture Diagram</title>
+<meta name="description" content="Interactive architecture and ER diagram for the CampusCoin College Reward Points blockchain project.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:#0a0e1a}
+  body{display:flex;flex-direction:column}
+
+  /* ─── top bar ─── */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 24px;
+    background:linear-gradient(135deg,#0f1629 0%,#131b33 100%);
+    border-bottom:1px solid rgba(99,102,241,.25);
+    z-index:10;flex-shrink:0;
+  }
+  .topbar h1{font-size:18px;font-weight:700;color:#e0e7ff;letter-spacing:-.3px}
+  .topbar h1 span{background:linear-gradient(135deg,#818cf8,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .topbar .subtitle{font-size:12px;color:#64748b;margin-top:2px}
+  .topbar-actions{display:flex;gap:8px}
+  .topbar-actions button{
+    padding:6px 14px;border-radius:8px;border:1px solid rgba(99,102,241,.3);
+    background:rgba(99,102,241,.1);color:#a5b4fc;font-size:12px;font-weight:500;
+    cursor:pointer;transition:all .2s;font-family:inherit;
+  }
+  .topbar-actions button:hover{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#c7d2fe}
+  .topbar-actions button.active{background:rgba(99,102,241,.3);border-color:#6366f1;color:#e0e7ff}
+
+  /* ─── legend ─── */
+  .legend{
+    position:absolute;bottom:20px;left:20px;z-index:10;
+    background:rgba(15,22,42,.92);border:1px solid rgba(99,102,241,.2);
+    border-radius:12px;padding:14px 18px;backdrop-filter:blur(12px);
+    max-width:260px;
+  }
+  .legend h3{font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;color:#94a3b8}
+  .legend-swatch{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+
+  /* ─── minimap ─── */
+  .minimap{
+    position:absolute;bottom:20px;right:20px;z-index:10;
+    width:180px;height:120px;
+    background:rgba(15,22,42,.9);border:1px solid rgba(99,102,241,.2);
+    border-radius:10px;overflow:hidden;
+  }
+  .minimap canvas{width:100%;height:100%}
+  .minimap-viewport{
+    position:absolute;border:1.5px solid #6366f1;border-radius:2px;
+    background:rgba(99,102,241,.08);pointer-events:none;
+  }
+
+  /* ─── tooltip ─── */
+  .tooltip{
+    position:absolute;z-index:100;pointer-events:none;
+    background:rgba(15,22,42,.96);border:1px solid rgba(99,102,241,.35);
+    border-radius:10px;padding:12px 16px;backdrop-filter:blur(16px);
+    max-width:300px;opacity:0;transition:opacity .15s;
+    box-shadow:0 8px 32px rgba(0,0,0,.5);
+  }
+  .tooltip.show{opacity:1}
+  .tooltip h4{font-size:13px;font-weight:700;color:#e0e7ff;margin-bottom:4px}
+  .tooltip p{font-size:11px;color:#94a3b8;line-height:1.5}
+  .tooltip .tt-tag{
+    display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;
+    margin-top:4px;
+  }
+
+  /* ─── canvas ─── */
+  #canvas{flex:1;cursor:grab;display:block}
+  #canvas.grabbing{cursor:grabbing}
+
+  /* ─── search ─── */
+  .search-box{
+    position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:20;
+    display:none;
+  }
+  .search-box.open{display:flex}
+  .search-box input{
+    width:320px;padding:10px 16px;border-radius:10px;
+    border:1px solid rgba(99,102,241,.3);background:rgba(15,22,42,.96);
+    color:#e0e7ff;font-size:13px;font-family:inherit;outline:none;
+    backdrop-filter:blur(12px);
+  }
+  .search-box input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+  .search-box input::placeholder{color:#475569}
+
+  /* zoom indicator */
+  .zoom-indicator{
+    position:absolute;top:70px;right:20px;z-index:10;
+    background:rgba(15,22,42,.9);border:1px solid rgba(99,102,241,.2);
+    border-radius:8px;padding:6px 12px;
+    font-size:11px;color:#94a3b8;font-weight:600;
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <h1>🪙 <span>CampusCoin</span> — Architecture Diagram</h1>
+    <div class="subtitle">College Reward Points System · Interactive ER + System Architecture</div>
+  </div>
+  <div class="topbar-actions">
+    <button onclick="toggleSearch()" title="Ctrl+F">🔍 Search</button>
+    <button onclick="fitToScreen()">⊞ Fit</button>
+    <button onclick="resetView()">↺ Reset</button>
+    <button onclick="toggleLabels()" id="btnLabels" class="active">🏷️ Labels</button>
+    <button onclick="exportPNG()">📸 Export PNG</button>
+  </div>
+</div>
+
+<div class="search-box" id="searchBox">
+  <input type="text" id="searchInput" placeholder="Search nodes… (Esc to close)" oninput="onSearch(this.value)" onkeydown="if(event.key==='Escape')toggleSearch()">
+</div>
+
+<div class="zoom-indicator" id="zoomInd">100%</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="legend">
+  <h3>Legend</h3>
+  <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#6366f1,#818cf8)"></div>Frontend (Next.js / Vercel)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#10b981,#34d399)"></div>Backend (FastAPI / Render)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)"></div>Blockchain (Ethereum Sepolia)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#ec4899,#f472b6)"></div>External Services</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#06b6d4,#22d3ee)"></div>Database Tables</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)"></div>Smart Contract</div>
+</div>
+
+<div class="minimap" id="minimap">
+  <canvas id="minimapCanvas"></canvas>
+  <div class="minimap-viewport" id="minimapVP"></div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <h4 id="ttTitle"></h4>
+  <p id="ttDesc"></p>
+  <span class="tt-tag" id="ttTag"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// DATA — nodes & edges
+// ═══════════════════════════════════════════════════════════════════════
+
+const CATEGORY_COLORS = {
+  frontend:  {bg:'#1e1b4b', border:'#6366f1', grad:['#6366f1','#818cf8'], text:'#c7d2fe', tag:'#312e81'},
+  backend:   {bg:'#064e3b', border:'#10b981', grad:['#10b981','#34d399'], text:'#a7f3d0', tag:'#065f46'},
+  blockchain:{bg:'#451a03', border:'#f59e0b', grad:['#f59e0b','#fbbf24'], text:'#fef3c7', tag:'#78350f'},
+  external:  {bg:'#500724', border:'#ec4899', grad:['#ec4899','#f472b6'], text:'#fce7f3', tag:'#831843'},
+  database:  {bg:'#083344', border:'#06b6d4', grad:['#06b6d4','#22d3ee'], text:'#cffafe', tag:'#164e63'},
+  contract:  {bg:'#2e1065', border:'#8b5cf6', grad:['#8b5cf6','#a78bfa'], text:'#ddd6fe', tag:'#4c1d95'},
+};
+
+const nodes = [
+  // ── Frontend layer ──
+  {id:'nextjs',     x:100,  y:80,  w:180, h:60, label:'Next.js DApp',          icon:'🌐', cat:'frontend',  desc:'Client-side React app on Vercel. Pages: Dashboard, Send, Store, Activity, Leaderboard, Admin, Assistant, Profile.', tag:'Vercel'},
+  {id:'metamask',   x:100,  y:180, w:180, h:60, label:'MetaMask Wallet',       icon:'🦊', cat:'frontend',  desc:'Browser wallet extension. Manages private keys, signs transactions locally via EIP-6963 discovery.', tag:'EIP-6963'},
+  {id:'ethersv6',   x:100,  y:280, w:180, h:60, label:'ethers.js v6',          icon:'📦', cat:'frontend',  desc:'JS library for Ethereum interaction. Reads balances, sends signed txns, decodes events.', tag:'Library'},
+
+  // ── Backend layer ──
+  {id:'fastapi',    x:440,  y:80,  w:180, h:60, label:'FastAPI Backend',       icon:'⚡', cat:'backend',   desc:'Python REST API on Render. Routers: /me, /admin, /activity, /catalog, /signup, /public. Handles JWT auth, chain sync, AI.', tag:'Render'},
+  {id:'auth_mod',   x:440,  y:180, w:180, h:60, label:'Auth Module',           icon:'🔐', cat:'backend',   desc:'app/auth.py — verifies Supabase JWTs, extracts user profiles, enforces role-based access (student/issuer/admin).', tag:'JWT'},
+  {id:'chain_mod',  x:440,  y:280, w:180, h:60, label:'Chain Module',          icon:'⛓️', cat:'backend',   desc:'app/chain.py — web3.py: reads contract state, decodes event logs, syncs on-chain events to Postgres.', tag:'web3.py'},
+  {id:'ai_mod',     x:440,  y:380, w:180, h:60, label:'AI Module',             icon:'🤖', cat:'backend',   desc:'app/ai.py — Groq LLM integration. Reward advisor suggests category+points+reason. Assistant chat grounded in user data.', tag:'Groq'},
+  {id:'queries',    x:440,  y:480, w:180, h:60, label:'Queries Module',        icon:'📋', cat:'backend',   desc:'app/queries.py — SQL query builder for profiles, events, leaderboard, store items, redemptions.', tag:'SQL'},
+
+  // ── Database tables ──
+  {id:'profiles',   x:780,  y:40,  w:170, h:55, label:'profiles',              icon:'👤', cat:'database',  desc:'UUID PK, email, full_name, avatar_url, role (student/issuer/admin), wallet_address, department, roll_no, gas_dripped_at.', tag:'Table'},
+  {id:'chain_ev',   x:780,  y:115, w:170, h:55, label:'chain_events',          icon:'📜', cat:'database',  desc:'tx_hash+log_index PK. Indexed contract events: Transfer, RewardIssued, Redeemed. Columns: block_number, event, from/to, amount, reason.', tag:'Table'},
+  {id:'tx_meta',    x:780,  y:190, w:170, h:55, label:'tx_meta',               icon:'🏷️', cat:'database',  desc:'tx_hash PK. Links on-chain txns to off-chain metadata: category_id (FK reward_categories), note, created_by (FK profiles).', tag:'Table'},
+  {id:'reward_cat', x:780,  y:265, w:170, h:55, label:'reward_categories',     icon:'🏆', cat:'database',  desc:'Serial PK. name (unique), description, default_points, icon, active. Seeded: Hackathon Win, Paper Publication, Volunteering, Attendance, Sports, Club.', tag:'Table'},
+  {id:'store',      x:780,  y:340, w:170, h:55, label:'store_items',           icon:'🛒', cat:'database',  desc:'Serial PK. name, description, cost, stock (nullable=unlimited), icon, active. Seeded: Meal Voucher, Library Waiver, Hoodie, Print Credits, Fest Pass, Lab Slot.', tag:'Table'},
+  {id:'redemptions',x:780,  y:415, w:170, h:55, label:'redemptions',           icon:'🎟️', cat:'database',  desc:'Serial PK. tx_hash, profile_id (FK), wallet_address, item_id (FK store_items), amount, status (pending/fulfilled/rejected), code, fulfilled_by (FK profiles).', tag:'Table'},
+  {id:'sync_state', x:780,  y:490, w:170, h:55, label:'sync_state',            icon:'🔄', cat:'database',  desc:'key PK. Tracks last_block synced for the event indexer. Ensures idempotent incremental sync.', tag:'Table'},
+
+  // ── Blockchain layer ──
+  {id:'sepolia',    x:1100, y:80,  w:180, h:60, label:'Sepolia Testnet',       icon:'💎', cat:'blockchain',desc:'Ethereum Sepolia testnet (chainId 11155111). Public RPC node for read/write. All CRP transactions are public & verifiable.', tag:'Chain'},
+  {id:'crp_token',  x:1100, y:200, w:180, h:80, label:'CRP ERC20 Token',       icon:'🪙', cat:'contract',  desc:'CollegeRewardPoints.sol — Custom ERC20 (decimals=0). Functions: transfer, approve, transferFrom, issueReward, batchIssueReward, redeem. Roles: owner + issuers. Safety: pause, maxIssuePerTx cap.', tag:'Solidity ^0.8.24'},
+  {id:'deploy_tool',x:1100, y:330, w:180, h:60, label:'Deploy Toolchain',      icon:'🔧', cat:'blockchain',desc:'blockchain/ — compile.py (py-solc-x), test_contract.py (EthereumTester), deploy.py (sign & send raw tx), interact.py (CLI).', tag:'web3.py'},
+
+  // ── External services ──
+  {id:'supabase',   x:440,  y:600, w:180, h:60, label:'Supabase',              icon:'⚡', cat:'external',  desc:'Managed Postgres + Auth. Google OAuth sign-in, JWT tokens, RLS enabled (no policies — only backend postgres role accesses).', tag:'Auth + DB'},
+  {id:'groq',       x:200,  y:600, w:160, h:60, label:'Groq LLM',             icon:'🧠', cat:'external',  desc:'Free-tier LLM API. Powers the AI Reward Advisor (suggests category, points, reason) and Assistant Chat (grounded in user data).', tag:'API'},
+  {id:'etherscan',  x:1100, y:440, w:180, h:60, label:'Etherscan (Sepolia)',   icon:'🔍', cat:'external',  desc:'Block explorer. Students verify transactions, view Transfer/RewardIssued/Redeemed events, gas usage, block confirmations.', tag:'Explorer'},
+];
+
+const edges = [
+  // Frontend → Backend
+  {from:'nextjs',    to:'fastapi',    label:'REST + JWT',              style:'solid',  color:'#6366f1'},
+  {from:'nextjs',    to:'metamask',   label:'request signature',       style:'solid',  color:'#818cf8'},
+  {from:'nextjs',    to:'ethersv6',   label:'import',                  style:'dashed', color:'#818cf8'},
+  {from:'ethersv6',  to:'sepolia',    label:'read balances (RPC)',     style:'solid',  color:'#f59e0b'},
+
+  // MetaMask → Chain
+  {from:'metamask',  to:'sepolia',    label:'signed tx (issue/transfer/redeem)', style:'solid', color:'#f59e0b'},
+
+  // Backend internal
+  {from:'fastapi',   to:'auth_mod',   label:'verify JWT',              style:'solid',  color:'#10b981'},
+  {from:'fastapi',   to:'chain_mod',  label:'chain ops',               style:'solid',  color:'#10b981'},
+  {from:'fastapi',   to:'ai_mod',     label:'AI calls',                style:'solid',  color:'#10b981'},
+  {from:'fastapi',   to:'queries',    label:'DB queries',              style:'solid',  color:'#10b981'},
+
+  // Backend → External
+  {from:'auth_mod',  to:'supabase',   label:'verify JWT / user lookup', style:'solid', color:'#ec4899'},
+  {from:'chain_mod', to:'sepolia',    label:'web3.py: logs, roles',    style:'solid',  color:'#f59e0b'},
+  {from:'ai_mod',    to:'groq',       label:'LLM completions',         style:'solid',  color:'#ec4899'},
+
+  // Backend → Database
+  {from:'queries',   to:'profiles',   label:'CRUD',                    style:'solid',  color:'#06b6d4'},
+  {from:'queries',   to:'chain_ev',   label:'index events',            style:'solid',  color:'#06b6d4'},
+  {from:'queries',   to:'tx_meta',    label:'link metadata',           style:'dashed', color:'#06b6d4'},
+  {from:'queries',   to:'reward_cat', label:'categories',              style:'dashed', color:'#06b6d4'},
+  {from:'queries',   to:'store',      label:'store items',             style:'dashed', color:'#06b6d4'},
+  {from:'queries',   to:'redemptions',label:'redemptions',             style:'solid',  color:'#06b6d4'},
+  {from:'queries',   to:'sync_state', label:'sync cursor',             style:'dashed', color:'#06b6d4'},
+
+  // DB foreign keys (ER relationships)
+  {from:'tx_meta',   to:'reward_cat', label:'FK category_id',          style:'dotted', color:'#22d3ee'},
+  {from:'tx_meta',   to:'profiles',   label:'FK created_by',           style:'dotted', color:'#22d3ee'},
+  {from:'redemptions',to:'profiles',  label:'FK profile_id',           style:'dotted', color:'#22d3ee'},
+  {from:'redemptions',to:'store',     label:'FK item_id',              style:'dotted', color:'#22d3ee'},
+
+  // Chain
+  {from:'sepolia',   to:'crp_token',  label:'EVM execution',           style:'solid',  color:'#f59e0b'},
+  {from:'deploy_tool',to:'sepolia',   label:'deploy tx',               style:'dashed', color:'#f59e0b'},
+  {from:'deploy_tool',to:'crp_token', label:'compile & test',          style:'dashed', color:'#8b5cf6'},
+
+  // Frontend → Auth
+  {from:'nextjs',    to:'supabase',   label:'Google sign-in',          style:'solid',  color:'#ec4899'},
+
+  // Etherscan
+  {from:'crp_token', to:'etherscan',  label:'indexed',                 style:'dashed', color:'#f59e0b'},
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+let cam = {x:0, y:0, zoom:1};
+let drag = null;          // {type:'node'|'canvas', id, ox, oy}
+let hoveredNode = null;
+let showLabels = true;
+let searchTerm = '';
+let highlightedNode = null;
+const DPR = window.devicePixelRatio || 1;
+
+// Precompute edge midpoints for label dragging
+edges.forEach(e => { e.labelOffX = 0; e.labelOffY = 0; });
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const mmCanvas = document.getElementById('minimapCanvas');
+const mmCtx = mmCanvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+function resize() {
+  canvas.width = canvas.clientWidth * DPR;
+  canvas.height = canvas.clientHeight * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  mmCanvas.width = 180 * DPR;
+  mmCanvas.height = 120 * DPR;
+  mmCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════════════════════════════
+// DRAWING
+// ═══════════════════════════════════════════════════════════════════════
+
+function worldToScreen(wx, wy) {
+  return [(wx - cam.x) * cam.zoom, (wy - cam.y) * cam.zoom];
+}
+function screenToWorld(sx, sy) {
+  return [sx / cam.zoom + cam.x, sy / cam.zoom + cam.y];
+}
+
+function getNodeCenter(n) {
+  return [n.x + n.w / 2, n.y + n.h / 2];
+}
+
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function edgeIntersect(n, cx, cy) {
+  // Get the point where a line from (cx,cy) to node center hits the node border
+  const nc = getNodeCenter(n);
+  const dx = cx - nc[0], dy = cy - nc[1];
+  if (dx === 0 && dy === 0) return nc;
+  const hw = n.w / 2, hh = n.h / 2;
+  const sx = Math.abs(dx) > 0.001 ? hw / Math.abs(dx) : 1e9;
+  const sy = Math.abs(dy) > 0.001 ? hh / Math.abs(dy) : 1e9;
+  const s = Math.min(sx, sy, 1);
+  return [nc[0] + dx * s, nc[1] + dy * s];
+}
+
+function drawArrowhead(ctx, fromX, fromY, toX, toY, size) {
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 7), toY - size * Math.sin(angle - Math.PI / 7));
+  ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 7), toY - size * Math.sin(angle + Math.PI / 7));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function draw() {
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grid
+  ctx.save();
+  const gridSize = 40 * cam.zoom;
+  const offX = (-cam.x * cam.zoom) % gridSize;
+  const offY = (-cam.y * cam.zoom) % gridSize;
+  ctx.strokeStyle = 'rgba(99,102,241,.06)';
+  ctx.lineWidth = 1;
+  for (let x = offX; x < W; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = offY; y < H; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(-cam.x * cam.zoom, -cam.y * cam.zoom);
+  ctx.scale(cam.zoom, cam.zoom);
+
+  // Draw group zones
+  drawGroupZones(ctx);
+
+  // Draw edges
+  edges.forEach(e => {
+    const fromN = nodes.find(n => n.id === e.from);
+    const toN = nodes.find(n => n.id === e.to);
+    if (!fromN || !toN) return;
+
+    const fc = getNodeCenter(fromN), tc = getNodeCenter(toN);
+    const p1 = edgeIntersect(fromN, tc[0], tc[1]);
+    const p2 = edgeIntersect(toN, fc[0], fc[1]);
+
+    const dimmed = searchTerm && !matchesSearch(fromN) && !matchesSearch(toN);
+
+    ctx.save();
+    ctx.globalAlpha = dimmed ? 0.1 : 0.7;
+    ctx.strokeStyle = e.color;
+    ctx.lineWidth = 2;
+    if (e.style === 'dashed') ctx.setLineDash([8, 5]);
+    else if (e.style === 'dotted') ctx.setLineDash([3, 4]);
+    else ctx.setLineDash([]);
+
+    ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.stroke();
+
+    // Arrowhead
+    ctx.fillStyle = e.color;
+    drawArrowhead(ctx, p1[0], p1[1], p2[0], p2[1], 10);
+    ctx.restore();
+
+    // Edge label
+    if (showLabels && e.label) {
+      const mx = (p1[0] + p2[0]) / 2 + e.labelOffX;
+      const my = (p1[1] + p2[1]) / 2 + e.labelOffY;
+      ctx.save();
+      ctx.globalAlpha = dimmed ? 0.1 : 0.85;
+      ctx.font = '500 10px Inter, system-ui';
+      const tw = ctx.measureText(e.label).width;
+      drawRoundedRect(ctx, mx - tw / 2 - 6, my - 8, tw + 12, 16, 4);
+      ctx.fillStyle = 'rgba(10,14,26,.88)';
+      ctx.fill();
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.fillStyle = e.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(e.label, mx, my);
+      ctx.restore();
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    const c = CATEGORY_COLORS[n.cat];
+    const isHovered = hoveredNode === n.id;
+    const isHighlighted = highlightedNode === n.id;
+    const dimmed = searchTerm && !matchesSearch(n);
+
+    ctx.save();
+    ctx.globalAlpha = dimmed ? 0.15 : 1;
+
+    // Shadow
+    if (isHovered || isHighlighted) {
+      ctx.shadowColor = c.border;
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 4;
+    } else {
+      ctx.shadowColor = 'rgba(0,0,0,.3)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+    }
+
+    // Background
+    drawRoundedRect(ctx, n.x, n.y, n.w, n.h, 10);
+    const grad = ctx.createLinearGradient(n.x, n.y, n.x + n.w, n.y + n.h);
+    grad.addColorStop(0, c.bg);
+    grad.addColorStop(1, adjustAlpha(c.bg, .7));
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Border
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = isHovered || isHighlighted ? c.grad[1] : c.border;
+    ctx.lineWidth = isHovered || isHighlighted ? 2.5 : 1.5;
+    ctx.stroke();
+
+    // Gradient accent bar on left
+    const accentGrad = ctx.createLinearGradient(n.x, n.y, n.x, n.y + n.h);
+    accentGrad.addColorStop(0, c.grad[0]);
+    accentGrad.addColorStop(1, c.grad[1]);
+    drawRoundedRect(ctx, n.x, n.y, 4, n.h, 2);
+    ctx.fillStyle = accentGrad;
+    ctx.fill();
+
+    // Icon + Text
+    ctx.textBaseline = 'middle';
+    const textY = n.y + n.h / 2;
+    ctx.font = `${Math.min(18, n.h * 0.35)}px Inter`;
+    ctx.fillText(n.icon, n.x + 14, textY);
+
+    ctx.font = `600 ${Math.min(13, n.h * 0.23)}px Inter, system-ui`;
+    ctx.fillStyle = c.text;
+    ctx.textAlign = 'left';
+    ctx.fillText(n.label, n.x + 36, textY);
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+
+  // Update minimap
+  drawMinimap();
+  document.getElementById('zoomInd').textContent = Math.round(cam.zoom * 100) + '%';
+}
+
+function drawGroupZones(ctx) {
+  const groups = [
+    {label:'🌐 Frontend Layer', cat:'frontend', ids:['nextjs','metamask','ethersv6'], color:'rgba(99,102,241,.06)', border:'rgba(99,102,241,.12)'},
+    {label:'⚡ Backend Layer', cat:'backend', ids:['fastapi','auth_mod','chain_mod','ai_mod','queries'], color:'rgba(16,185,129,.05)', border:'rgba(16,185,129,.1)'},
+    {label:'🗄️ Database (Supabase Postgres)', cat:'database', ids:['profiles','chain_ev','tx_meta','reward_cat','store','redemptions','sync_state'], color:'rgba(6,182,212,.04)', border:'rgba(6,182,212,.08)'},
+    {label:'⛓️ Ethereum Sepolia', cat:'blockchain', ids:['sepolia','crp_token','deploy_tool','etherscan'], color:'rgba(245,158,11,.04)', border:'rgba(245,158,11,.08)'},
+  ];
+
+  groups.forEach(g => {
+    const gNodes = nodes.filter(n => g.ids.includes(n.id));
+    if (!gNodes.length) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    gNodes.forEach(n => {
+      minX = Math.min(minX, n.x);
+      minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + n.w);
+      maxY = Math.max(maxY, n.y + n.h);
+    });
+    const pad = 24;
+    drawRoundedRect(ctx, minX - pad, minY - pad - 20, maxX - minX + pad * 2, maxY - minY + pad * 2 + 20, 16);
+    ctx.fillStyle = g.color;
+    ctx.fill();
+    ctx.strokeStyle = g.border;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = '600 11px Inter, system-ui';
+    ctx.fillStyle = g.border.replace(/[\d.]+\)$/, '0.5)');
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(g.label, minX - pad + 12, minY - pad - 14);
+  });
+}
+
+function drawMinimap() {
+  const mmW = 180, mmH = 120;
+  mmCtx.clearRect(0, 0, mmW, mmH);
+  mmCtx.fillStyle = 'rgba(10,14,26,.95)';
+  mmCtx.fillRect(0, 0, mmW, mmH);
+
+  // Bounds
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  nodes.forEach(n => {
+    minX = Math.min(minX, n.x);
+    minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x + n.w);
+    maxY = Math.max(maxY, n.y + n.h);
+  });
+  const pad = 60;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const worldW = maxX - minX, worldH = maxY - minY;
+  const s = Math.min(mmW / worldW, mmH / worldH);
+
+  nodes.forEach(n => {
+    const c = CATEGORY_COLORS[n.cat];
+    mmCtx.fillStyle = c.border;
+    mmCtx.globalAlpha = 0.7;
+    mmCtx.fillRect((n.x - minX) * s, (n.y - minY) * s, n.w * s, n.h * s);
+  });
+  mmCtx.globalAlpha = 1;
+
+  // Viewport rect
+  const vp = document.getElementById('minimapVP');
+  const cW = canvas.clientWidth, cH = canvas.clientHeight;
+  const vpX = (cam.x - minX) * s;
+  const vpY = (cam.y - minY) * s;
+  const vpW = (cW / cam.zoom) * s;
+  const vpH = (cH / cam.zoom) * s;
+  vp.style.left = vpX + 'px';
+  vp.style.top = vpY + 'px';
+  vp.style.width = Math.min(vpW, mmW) + 'px';
+  vp.style.height = Math.min(vpH, mmH) + 'px';
+}
+
+function adjustAlpha(hex, alpha) {
+  // For named colors just return
+  return hex;
+}
+
+function matchesSearch(n) {
+  if (!searchTerm) return true;
+  const q = searchTerm.toLowerCase();
+  return n.label.toLowerCase().includes(q) || n.desc.toLowerCase().includes(q) || n.cat.toLowerCase().includes(q) || n.id.toLowerCase().includes(q);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// INTERACTION
+// ═══════════════════════════════════════════════════════════════════════
+
+function getNodeAt(wx, wy) {
+  // Reverse order — top-drawn last
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    if (wx >= n.x && wx <= n.x + n.w && wy >= n.y && wy <= n.y + n.h) return n;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const [wx, wy] = screenToWorld(e.offsetX, e.offsetY);
+  const n = getNodeAt(wx, wy);
+  if (n) {
+    drag = {type: 'node', node: n, ox: wx - n.x, oy: wy - n.y};
+    canvas.classList.add('grabbing');
+  } else {
+    drag = {type: 'canvas', sx: e.offsetX, sy: e.offsetY, cx: cam.x, cy: cam.y};
+    canvas.classList.add('grabbing');
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const [wx, wy] = screenToWorld(e.offsetX, e.offsetY);
+
+  if (drag) {
+    if (drag.type === 'node') {
+      drag.node.x = wx - drag.ox;
+      drag.node.y = wy - drag.oy;
+    } else {
+      cam.x = drag.cx - (e.offsetX - drag.sx) / cam.zoom;
+      cam.y = drag.cy - (e.offsetY - drag.sy) / cam.zoom;
+    }
+    draw();
+    return;
+  }
+
+  // Hover
+  const n = getNodeAt(wx, wy);
+  const prevHover = hoveredNode;
+  hoveredNode = n ? n.id : null;
+  if (hoveredNode !== prevHover) draw();
+
+  // Tooltip
+  if (n) {
+    const c = CATEGORY_COLORS[n.cat];
+    document.getElementById('ttTitle').textContent = n.icon + ' ' + n.label;
+    document.getElementById('ttDesc').textContent = n.desc;
+    const tag = document.getElementById('ttTag');
+    tag.textContent = n.tag;
+    tag.style.background = c.tag;
+    tag.style.color = c.text;
+    tooltip.style.left = (e.clientX + 16) + 'px';
+    tooltip.style.top = (e.clientY + 16) + 'px';
+    tooltip.classList.add('show');
+    canvas.style.cursor = 'grab';
+  } else {
+    tooltip.classList.remove('show');
+    canvas.style.cursor = 'grab';
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  drag = null;
+  canvas.classList.remove('grabbing');
+});
+canvas.addEventListener('mouseleave', () => {
+  drag = null;
+  canvas.classList.remove('grabbing');
+  tooltip.classList.remove('show');
+  hoveredNode = null;
+  draw();
+});
+
+// Zoom
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const [wx, wy] = screenToWorld(e.offsetX, e.offsetY);
+  const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+  const newZoom = Math.max(0.2, Math.min(5, cam.zoom * factor));
+  cam.x = wx - e.offsetX / newZoom;
+  cam.y = wy - e.offsetY / newZoom;
+  cam.zoom = newZoom;
+  draw();
+}, {passive: false});
+
+// Touch support
+let lastTouchDist = 0;
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const ox = t.clientX - rect.left, oy = t.clientY - rect.top;
+    const [wx, wy] = screenToWorld(ox, oy);
+    const n = getNodeAt(wx, wy);
+    if (n) {
+      drag = {type:'node', node:n, ox:wx-n.x, oy:wy-n.y};
+    } else {
+      drag = {type:'canvas', sx:ox, sy:oy, cx:cam.x, cy:cam.y};
+    }
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    lastTouchDist = Math.sqrt(dx*dx+dy*dy);
+  }
+  e.preventDefault();
+}, {passive: false});
+
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length === 1 && drag) {
+    const t = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const ox = t.clientX - rect.left, oy = t.clientY - rect.top;
+    const [wx, wy] = screenToWorld(ox, oy);
+    if (drag.type === 'node') {
+      drag.node.x = wx - drag.ox;
+      drag.node.y = wy - drag.oy;
+    } else {
+      cam.x = drag.cx - (ox - drag.sx) / cam.zoom;
+      cam.y = drag.cy - (oy - drag.sy) / cam.zoom;
+    }
+    draw();
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    if (lastTouchDist > 0) {
+      const factor = dist / lastTouchDist;
+      cam.zoom = Math.max(0.2, Math.min(5, cam.zoom * factor));
+      draw();
+    }
+    lastTouchDist = dist;
+  }
+  e.preventDefault();
+}, {passive: false});
+
+canvas.addEventListener('touchend', () => { drag = null; lastTouchDist = 0; });
+
+// Double-click to highlight
+canvas.addEventListener('dblclick', e => {
+  const [wx, wy] = screenToWorld(e.offsetX, e.offsetY);
+  const n = getNodeAt(wx, wy);
+  highlightedNode = n ? (highlightedNode === n.id ? null : n.id) : null;
+  draw();
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// TOOLBAR ACTIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+function fitToScreen() {
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  nodes.forEach(n=>{minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x+n.w);maxY=Math.max(maxY,n.y+n.h)});
+  const pad = 80;
+  const wW = maxX-minX+pad*2, wH = maxY-minY+pad*2;
+  const cW = canvas.clientWidth, cH = canvas.clientHeight;
+  cam.zoom = Math.min(cW/wW, cH/wH, 2);
+  cam.x = minX - pad - (cW/cam.zoom - wW)/2 + pad;
+  cam.y = minY - pad - (cH/cam.zoom - wH)/2 + pad;
+  draw();
+}
+
+function resetView() {
+  cam = {x: -40, y: -40, zoom: 1};
+  draw();
+}
+
+function toggleLabels() {
+  showLabels = !showLabels;
+  document.getElementById('btnLabels').classList.toggle('active', showLabels);
+  draw();
+}
+
+function toggleSearch() {
+  const box = document.getElementById('searchBox');
+  box.classList.toggle('open');
+  if (box.classList.contains('open')) {
+    document.getElementById('searchInput').focus();
+  } else {
+    searchTerm = '';
+    document.getElementById('searchInput').value = '';
+    draw();
+  }
+}
+
+function onSearch(val) {
+  searchTerm = val;
+  draw();
+}
+
+function exportPNG() {
+  // Temporarily render at high res
+  const oldZoom = cam.zoom;
+  const oldX = cam.x, oldY = cam.y;
+  fitToScreen();
+  const exportCanvas = document.createElement('canvas');
+  const scale = 3;
+  exportCanvas.width = canvas.clientWidth * scale;
+  exportCanvas.height = canvas.clientHeight * scale;
+  const ectx = exportCanvas.getContext('2d');
+  ectx.scale(scale, scale);
+
+  // Redraw onto export canvas
+  // Copy current state drawing
+  ectx.fillStyle = '#0a0e1a';
+  ectx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+  // Grid
+  const gridSize = 40 * cam.zoom;
+  const offX = (-cam.x * cam.zoom) % gridSize;
+  const offY = (-cam.y * cam.zoom) % gridSize;
+  ectx.strokeStyle = 'rgba(99,102,241,.06)';
+  ectx.lineWidth = 1;
+  for (let x = offX; x < canvas.clientWidth; x += gridSize) {
+    ectx.beginPath(); ectx.moveTo(x, 0); ectx.lineTo(x, canvas.clientHeight); ectx.stroke();
+  }
+  for (let y = offY; y < canvas.clientHeight; y += gridSize) {
+    ectx.beginPath(); ectx.moveTo(0, y); ectx.lineTo(canvas.clientWidth, y); ectx.stroke();
+  }
+
+  ectx.save();
+  ectx.translate(-cam.x * cam.zoom, -cam.y * cam.zoom);
+  ectx.scale(cam.zoom, cam.zoom);
+
+  // Group zones
+  drawGroupZones(ectx);
+
+  // Edges
+  edges.forEach(e => {
+    const fromN = nodes.find(n => n.id === e.from);
+    const toN = nodes.find(n => n.id === e.to);
+    if (!fromN || !toN) return;
+    const fc = getNodeCenter(fromN), tc = getNodeCenter(toN);
+    const p1 = edgeIntersect(fromN, tc[0], tc[1]);
+    const p2 = edgeIntersect(toN, fc[0], fc[1]);
+    ectx.save();
+    ectx.globalAlpha = 0.7;
+    ectx.strokeStyle = e.color;
+    ectx.lineWidth = 2;
+    if (e.style === 'dashed') ectx.setLineDash([8, 5]);
+    else if (e.style === 'dotted') ectx.setLineDash([3, 4]);
+    else ectx.setLineDash([]);
+    ectx.beginPath(); ectx.moveTo(p1[0], p1[1]); ectx.lineTo(p2[0], p2[1]); ectx.stroke();
+    ectx.fillStyle = e.color;
+    drawArrowhead(ectx, p1[0], p1[1], p2[0], p2[1], 10);
+    ectx.restore();
+    if (showLabels && e.label) {
+      const mx = (p1[0]+p2[0])/2+e.labelOffX, my = (p1[1]+p2[1])/2+e.labelOffY;
+      ectx.save();
+      ectx.globalAlpha = 0.85;
+      ectx.font = '500 10px Inter, system-ui';
+      const tw = ectx.measureText(e.label).width;
+      drawRoundedRect(ectx, mx-tw/2-6, my-8, tw+12, 16, 4);
+      ectx.fillStyle = 'rgba(10,14,26,.88)'; ectx.fill();
+      ectx.strokeStyle = e.color; ectx.lineWidth = 0.5; ectx.setLineDash([]); ectx.stroke();
+      ectx.fillStyle = e.color; ectx.textAlign = 'center'; ectx.textBaseline = 'middle';
+      ectx.fillText(e.label, mx, my);
+      ectx.restore();
+    }
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    const c = CATEGORY_COLORS[n.cat];
+    ectx.save();
+    drawRoundedRect(ectx, n.x, n.y, n.w, n.h, 10);
+    ectx.fillStyle = c.bg; ectx.fill();
+    ectx.strokeStyle = c.border; ectx.lineWidth = 1.5; ectx.stroke();
+    const ag = ectx.createLinearGradient(n.x, n.y, n.x, n.y+n.h);
+    ag.addColorStop(0, c.grad[0]); ag.addColorStop(1, c.grad[1]);
+    drawRoundedRect(ectx, n.x, n.y, 4, n.h, 2);
+    ectx.fillStyle = ag; ectx.fill();
+    ectx.textBaseline = 'middle';
+    const textY = n.y + n.h/2;
+    ectx.font = `${Math.min(18, n.h*0.35)}px Inter`;
+    ectx.fillText(n.icon, n.x+14, textY);
+    ectx.font = `600 ${Math.min(13, n.h*0.23)}px Inter, system-ui`;
+    ectx.fillStyle = c.text; ectx.textAlign = 'left';
+    ectx.fillText(n.label, n.x+36, textY);
+    ectx.restore();
+  });
+
+  ectx.restore();
+
+  // Title watermark
+  ectx.font = '700 14px Inter'; ectx.fillStyle = 'rgba(99,102,241,.4)';
+  ectx.textAlign = 'right'; ectx.textBaseline = 'bottom';
+  ectx.fillText('CampusCoin — Architecture Diagram', canvas.clientWidth - 20, canvas.clientHeight - 12);
+
+  const link = document.createElement('a');
+  link.download = 'campuscoin-architecture.png';
+  link.href = exportCanvas.toDataURL('image/png');
+  link.click();
+
+  // Restore
+  cam.x = oldX; cam.y = oldY; cam.zoom = oldZoom;
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'f') { e.preventDefault(); toggleSearch(); }
+  if (e.key === '+' || e.key === '=') { cam.zoom = Math.min(5, cam.zoom * 1.15); draw(); }
+  if (e.key === '-') { cam.zoom = Math.max(0.2, cam.zoom / 1.15); draw(); }
+  if (e.key === '0') { resetView(); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════
+resize();
+fitToScreen();
+</script>
+</body>
+</html>
