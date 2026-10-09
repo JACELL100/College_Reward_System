@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     GAS_DRIP_MIN_BALANCE_ETH: float = 0.002
 
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     @property
     def frontend_origins(self) -> list[str]:

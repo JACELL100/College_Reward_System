@@ -176,9 +176,16 @@ async def gas_drip(user: dict = Depends(get_current_user)):
                 tip = Web3.to_wei(1.5, "gwei")
             tx = {
                 "type": 2, "chainId": settings.CHAIN_ID, "to": Web3.to_checksum_address(wallet), "value": value,
-                "gas": 21000, "maxPriorityFeePerGas": tip, "maxFeePerGas": base * 2 + tip,
+                "maxPriorityFeePerGas": tip, "maxFeePerGas": base * 2 + tip,
                 "nonce": await w3.eth.get_transaction_count(acct.address, "pending"),
             }
+            # Don't hard-code 21000: sending ETH to a brand-new account costs extra
+            # state-creation gas on current Sepolia, and a 21000 limit reverts.
+            try:
+                est = await w3.eth.estimate_gas({"from": acct.address, "to": tx["to"], "value": value})
+            except Exception:
+                est = 60_000
+            tx["gas"] = int(est * 1.3)
             signed = acct.sign_transaction(tx)
             h = await w3.eth.send_raw_transaction(signed.raw_transaction)
     except Exception as e:

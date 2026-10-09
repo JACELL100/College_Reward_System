@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import {
   ArrowUp,
@@ -91,6 +92,13 @@ function PreBlock({ children }: { children?: React.ReactNode }) {
 }
 
 const mdComponents: Components = {
+  table: ({ children }) => (
+    <div className="my-3 overflow-x-auto rounded-xl border border-line">
+      <table className="w-full border-collapse text-left text-[13px]">{children}</table>
+    </div>
+  ),
+  th: ({ children }) => <th className="border-b border-line bg-white/[0.04] px-3 py-2 font-medium">{children}</th>,
+  td: ({ children }) => <td className="border-b border-line/60 px-3 py-2 align-top">{children}</td>,
   a: ({ href, children }) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="break-words">
       {children}
@@ -107,7 +115,7 @@ const mdComponents: Components = {
 function Markdown({ content }: { content: string }) {
   return (
     <div className="prose-chat break-words text-[14px] leading-relaxed text-fg/90 [&>*:first-child]:mt-0! [&>*:last-child]:mb-0!">
-      <ReactMarkdown components={mdComponents}>{content}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{content}</ReactMarkdown>
     </div>
   );
 }

@@ -24,6 +24,9 @@ async def _complete(messages: list[dict], json_mode: bool = False, temperature: 
             "max_tokens": max_tokens}
     if json_mode:
         body["response_format"] = {"type": "json_object"}
+    if "gpt-oss" in settings.GROQ_MODEL:
+        # Reasoning model: keep thinking short so replies stay fast and within max_tokens.
+        body["reasoning_effort"] = "low"
     try:
         async with httpx.AsyncClient(timeout=30) as c:
             r = await c.post(GROQ_URL, json=body, headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"})
@@ -53,7 +56,7 @@ async def suggest_reward(description: str, categories: list[dict]) -> dict:
     )
     content = await _complete(
         [{"role": "system", "content": system}, {"role": "user", "content": description[:2000]}],
-        json_mode=True, temperature=0.2, max_tokens=300)
+        json_mode=True, temperature=0.2, max_tokens=1200)
     try:
         data = json.loads(content)
     except ValueError:
@@ -151,4 +154,4 @@ async def chat(messages: list[dict], ctx: dict) -> str:
     if not convo or convo[-1]["role"] != "user":
         raise HTTPException(400, "Last message must be from the user")
     return (await _complete([{"role": "system", "content": "\n".join(lines)}, *convo],
-                            temperature=0.5, max_tokens=700)).strip()
+                            temperature=0.5, max_tokens=1800)).strip()
