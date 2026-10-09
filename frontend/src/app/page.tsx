@@ -137,10 +137,10 @@ export default function Home() {
               Your achievements, minted.
             </h2>
             <p className="relative mx-auto mt-3 max-w-md text-sm text-muted">
-              Sign in with your college Google account, connect MetaMask and claim your first points.
+              Create an account in seconds, connect MetaMask and claim your first points.
             </p>
             <Link
-              href="/login"
+              href="/login?mode=signup"
               className="relative mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-accent-gradient px-6 text-[15px] font-medium text-white shadow-[0_8px_24px_-8px_rgb(124_92_246/0.6)] transition hover:brightness-110"
             >
               Get started <ArrowRight className="size-4" />

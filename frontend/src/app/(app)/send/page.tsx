@@ -157,7 +157,7 @@ function RecipientCard({ r, onClear }: { r: PickedRecipient; onClear?: () => voi
 /* ------------------------------ Main ------------------------------ */
 function SendInner() {
   const params = useSearchParams();
-  const { profile } = useAuth();
+  const { profile, isIssuer } = useAuth();
   const w = useWallet();
   const { link, linking, linked, mismatch } = useLinkWallet();
   const { state: contract } = useContractState();
@@ -387,6 +387,21 @@ function SendInner() {
         title="Send CRP"
         description="Move reward points to a classmate. Transfers settle on Sepolia in about 12 seconds."
       />
+
+      {isIssuer && balanceNum === 0 && step === "form" && (
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-violet-500/25 bg-violet-500/[0.07] p-4 text-sm sm:flex-row sm:items-center">
+          <div className="flex-1">
+            <p className="font-medium text-fg">You hold 0 CRP, and that&apos;s expected.</p>
+            <p className="mt-0.5 text-[13px] text-muted">
+              Send only moves points you already own. As an issuer you create new points with{" "}
+              <code className="font-mono text-violet-200">issueReward</code>, minted straight to a student&apos;s wallet.
+            </p>
+          </div>
+          <ButtonLink href="/admin/issue" size="sm">
+            Issue points
+          </ButtonLink>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {step === "success" && sent ? (

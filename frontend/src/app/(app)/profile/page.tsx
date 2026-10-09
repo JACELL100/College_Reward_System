@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { AlertTriangle, Coins, ExternalLink, Fuel, Link2, Link2Off, Save, UserRound, Wallet } from "lucide-react";
@@ -7,6 +7,7 @@ import { displayName, useAuth } from "@/components/providers/auth-provider";
 import { useWallet } from "@/components/providers/wallet-provider";
 import { useLinkWallet } from "@/components/providers/use-link-wallet";
 import { GasHelp } from "@/components/onboarding";
+import { ChangePasswordCard } from "@/components/change-password-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge, RoleBadge } from "@/components/ui/badge";
@@ -33,15 +34,19 @@ export default function ProfilePage() {
   const { link, unlink, linking, linked, mismatch } = useLinkWallet();
   const [form, setForm] = useState({ full_name: "", department: "", roll_no: "" });
   const [saving, setSaving] = useState(false);
+  const providers = (session?.user.app_metadata?.providers as string[] | undefined) ?? [session?.user.app_metadata?.provider];
+  const isEmailUser = providers.includes("email");
 
-  useEffect(() => {
-    if (profile)
-      setForm({
-        full_name: profile.full_name ?? "",
-        department: profile.department ?? "",
-        roll_no: profile.roll_no ?? "",
-      });
-  }, [profile]);
+  // Re-sync the form whenever a new profile object arrives (adjusting state during render).
+  const [syncedFrom, setSyncedFrom] = useState<Profile | null>(null);
+  if (profile && profile !== syncedFrom) {
+    setSyncedFrom(profile);
+    setForm({
+      full_name: profile.full_name ?? "",
+      department: profile.department ?? "",
+      roll_no: profile.roll_no ?? "",
+    });
+  }
 
   const dirty =
     !!profile &&
@@ -186,6 +191,8 @@ export default function ProfilePage() {
             </div>
           </CardBody>
         </Card>
+
+        {isEmailUser && <ChangePasswordCard />}
 
         <Card>
           <CardHeader title="Gas for transactions" description="Transfers and redemptions need a little Sepolia ETH." icon={<Fuel className="size-4" />} />

@@ -224,9 +224,41 @@ function UserMenu() {
 
 function Banners() {
   const w = useWallet();
-  const { profileError, refreshProfile } = useAuth();
-  const { mismatch, linked } = useLinkWallet();
+  const { profile, profileError, refreshProfile } = useAuth();
+  const { mismatch, linked, link, linking } = useLinkWallet();
   const items: React.ReactNode[] = [];
+  // Connected in MetaMask but never linked: the account can't receive points or show in pickers yet.
+  if (profile && !linked && w.address && w.isCorrectChain)
+    items.push(
+      <Banner
+        key="l"
+        tone="info"
+        action={
+          <Button size="sm" onClick={() => void link()} loading={linking}>
+            Sign &amp; link wallet
+          </Button>
+        }
+      >
+        <span className="font-medium">Link {shortAddr(w.address)} to your account</span> so issuers and classmates can find
+        you and send you CRP. It&apos;s a free signature, no gas.
+      </Banner>,
+    );
+  if (profile && !linked && !w.address && w.hydrated)
+    items.push(
+      <Banner
+        key="w"
+        tone="info"
+        action={
+          w.installed ? (
+            <Button size="sm" onClick={() => void w.connect()} loading={w.connecting}>
+              Connect MetaMask
+            </Button>
+          ) : undefined
+        }
+      >
+        Connect MetaMask and link your wallet to start receiving CRP.
+      </Banner>,
+    );
   if (!isContractConfigured)
     items.push(
       <Banner key="c" tone="warning">

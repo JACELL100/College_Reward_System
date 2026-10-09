@@ -23,6 +23,8 @@ services:
         value: https://pzcimxioslwojjjotrde.supabase.co
       - key: SUPABASE_ANON_KEY
         sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY   # server-only; enables instant email sign-up
+        sync: false
       - key: SUPABASE_JWT_SECRET
         sync: false
 

@@ -9,7 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import auth, chain, db
 from .config import settings
-from .routers import activity, admin, catalog, me, public
+from .routers import activity, admin, catalog, me, public, signup
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("crp")
@@ -60,7 +60,7 @@ async def unhandled_exc(request: Request, exc: Exception):
     return JSONResponse({"detail": "Internal server error"}, status_code=500)
 
 
-for r in (public.router, me.router, catalog.router, activity.router, admin.router):
+for r in (public.router, me.router, catalog.router, activity.router, admin.router, signup.router):
     app.include_router(r)
 
 

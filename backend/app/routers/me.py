@@ -210,10 +210,11 @@ async def directory(q: str = Query(default="", max_length=100), user: dict = Dep
     like = f"%{q.strip()}%"
     rows = await db.fetch(
         """select id, full_name, avatar_url, department, role, wallet_address, email from profiles
-           where wallet_address is not null and id <> $1
+           where id <> $1
              and ($2 = '%%' or full_name ilike $2 or email ilike $2 or roll_no ilike $2
                   or department ilike $2 or wallet_address ilike $2)
-           order by full_name nulls last limit 20""",
+           -- people who haven't linked a wallet are still listed (UI shows them as not yet payable)
+           order by (wallet_address is null), full_name nulls last limit 20""",
         user["id"], like)
     return [{"id": r["id"], "full_name": r["full_name"], "avatar_url": r["avatar_url"],
              "department": r["department"], "role": r["role"], "wallet_address": r["wallet_address"],

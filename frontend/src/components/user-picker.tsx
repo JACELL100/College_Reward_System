@@ -108,18 +108,22 @@ export function UserPicker({
           <p className="p-4 text-center text-xs text-red-300">{error}</p>
         ) : list.length === 0 ? (
           <p className="p-6 text-center text-xs text-muted">
-            {q ? "No students with a linked wallet match." : "No students with linked wallets yet."}
+            {q ? "No one matches that search." : "No other users have signed up yet."}
           </p>
         ) : (
           <ul className="divide-y divide-line/60">
             {list.map((u) => {
-              const sel = value?.address === u.wallet_address.toLowerCase();
+              const wallet = u.wallet_address?.toLowerCase() ?? null;
+              const sel = !!wallet && value?.address === wallet;
               return (
                 <li key={u.id}>
                   <button
+                    disabled={!wallet}
+                    title={wallet ? undefined : "This person hasn't linked a wallet yet, so they can't receive CRP"}
                     onClick={() =>
+                      wallet &&
                       onChange({
-                        address: u.wallet_address.toLowerCase(),
+                        address: wallet,
                         name: u.full_name,
                         avatar_url: u.avatar_url,
                         id: u.id,
@@ -128,20 +132,26 @@ export function UserPicker({
                     }
                     className={cn(
                       "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors",
-                      sel ? "bg-accent/10" : "hover:bg-white/[0.03]",
+                      !wallet ? "cursor-not-allowed opacity-55" : sel ? "bg-accent/10" : "hover:bg-white/[0.03]",
                     )}
                   >
-                    <Avatar src={u.avatar_url} name={u.full_name} seed={u.wallet_address} size={34} />
+                    <Avatar src={u.avatar_url} name={u.full_name} seed={wallet ?? u.id} size={34} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-medium">{u.full_name ?? "Unnamed"}</span>
                         {u.role !== "student" && <RoleBadge role={u.role} />}
                       </div>
                       <div className="truncate text-xs text-muted">
-                        {[u.department, u.email_hint].filter(Boolean).join(" · ") || shortAddr(u.wallet_address)}
+                        {[u.department, u.email_hint].filter(Boolean).join(" · ") || (wallet ? shortAddr(wallet) : "")}
                       </div>
                     </div>
-                    <span className="hidden font-mono text-[11px] text-subtle sm:block">{shortAddr(u.wallet_address)}</span>
+                    {wallet ? (
+                      <span className="hidden font-mono text-[11px] text-subtle sm:block">{shortAddr(wallet)}</span>
+                    ) : (
+                      <span className="shrink-0 rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-200">
+                        No wallet linked
+                      </span>
+                    )}
                     {sel && <Check className="size-4 shrink-0 text-accent" />}
                   </button>
                 </li>

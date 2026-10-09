@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, ArrowUpRight, ExternalLink, Flame, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
-import { GoogleSignInButton } from "@/components/google-button";
 import { ButtonLink } from "@/components/ui/button";
 import { CopyButton, CountUp, Skeleton } from "@/components/ui/misc";
 import { CoinMark } from "@/components/logo";
@@ -73,7 +72,14 @@ export function Hero() {
               Open dashboard <ArrowRight className="size-4" />
             </ButtonLink>
           ) : (
-            <GoogleSignInButton label="Sign in with Google" />
+            <>
+              <ButtonLink href="/login?mode=signup" size="lg">
+                Get started <ArrowRight className="size-4" />
+              </ButtonLink>
+              <ButtonLink href="/login" size="lg" variant="secondary">
+                Sign in
+              </ButtonLink>
+            </>
           )}
           <ButtonLink href="/about" size="lg" variant="outline">
             How it works

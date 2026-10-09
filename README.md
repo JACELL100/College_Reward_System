@@ -51,7 +51,7 @@ flowchart LR
     subgraph Cloud["Off-chain services"]
         API["FastAPI backend<br/>(Render)"]
         DB[("Supabase Postgres<br/>profiles · events · store")]
-        AUTH["Supabase Auth<br/>Google OAuth"]
+        AUTH["Supabase Auth<br/>Email + password · Google OAuth"]
         AI["Groq LLM<br/>advisor + assistant"]
     end
 
@@ -159,6 +159,7 @@ npm run dev                           # http://localhost:3000
 | backend | `SUPABASE_URL` | `https://pzcimxioslwojjjotrde.supabase.co` |
 | backend | `SUPABASE_ANON_KEY` | Supabase → Project Settings → API → `anon` `public` key |
 | backend | `SUPABASE_JWT_SECRET` | Supabase → Project Settings → API → JWT Settings (secret) |
+| backend | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (service_role, **server-only**). Enables instant email/password sign-up without confirmation emails; if unset, sign-up falls back to Supabase confirmation emails |
 | backend | `FRONTEND_ORIGINS` | comma list, e.g. `http://localhost:3000,https://<app>.vercel.app` |
 | backend | `ADMIN_EMAILS` | comma list of Google accounts that get admin |
 | backend | `SEPOLIA_RPC_URL`, `CHAIN_ID` | `https://ethereum-sepolia-rpc.publicnode.com`, `11155111` |
@@ -206,7 +207,7 @@ Open `https://sepolia.etherscan.io/address/<address>` to confirm. Commit `build/
 1. Push the repo to GitHub.
 2. Render Dashboard → **New → Blueprint** → select the repo. Render reads [`render.yaml`](render.yaml)
    (free plan, Singapore, root `backend`, health check `/api/health`).
-3. Fill every variable marked `sync: false` (`DATABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET`, `FRONTEND_ORIGINS`,
+3. Fill every variable marked `sync: false` (`DATABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `FRONTEND_ORIGINS`,
    `ADMIN_EMAILS`, `CONTRACT_ADDRESS`, `CONTRACT_DEPLOY_BLOCK`, `GAS_DRIP_PRIVATE_KEY`, `GROQ_API_KEY`). For now set
    `FRONTEND_ORIGINS=http://localhost:3000`; you will update it after step (d).
 4. Deploy, then open `https://<service>.onrender.com/api/health` → `{"status":"ok","db":true,"chain":true,...}`.

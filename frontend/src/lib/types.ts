@@ -115,7 +115,7 @@ export interface DirectoryEntry {
   avatar_url: string | null;
   department: string | null;
   role: Role;
-  wallet_address: string;
+  wallet_address: string | null; // null = account has not linked a wallet yet
   email_hint: string | null;
 }
 
