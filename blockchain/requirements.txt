@@ -1,0 +1,17 @@
+# web3.py v7 + local in-memory EVM for tests
+web3==7.16.0
+py-solc-x==2.0.5
+python-dotenv==1.2.4
+# Test chain (equivalent of web3[tester]). eth-tester's py-evm extra pulls
+# safe-pysha3, which has no Windows wheel; pycryptodome is used as the keccak
+# backend instead. If `pip install -r requirements.txt` fails on that, run:
+#   pip install --no-deps eth-tester==0.13.0b1 py-evm==0.12.1b1
+eth-tester==0.13.0b1
+py-evm==0.12.1b1
+pycryptodome
+cached-property
+eth-bloom
+lru-dict
+trie
+sortedcontainers
+semantic-version

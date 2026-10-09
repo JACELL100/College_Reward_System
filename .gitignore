@@ -1,0 +1,58 @@
+# ---------- Secrets (never commit) ----------
+.env
+.env.*
+*.env
+!.env.example
+!**/.env.example
+*.pem
+*.key
+keystore/
+UTC--*
+
+# ---------- Python ----------
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# py-solc-x downloaded compilers
+.solcx/
+.solcx-lock-*
+
+# NOTE: blockchain/build/ (ABI + bytecode) and blockchain/deployments/ (contract
+# address) are intentionally COMMITTED - they are public information that the
+# backend and frontend depend on.
+
+# ---------- Node / Next.js ----------
+node_modules/
+.next/
+out/
+.vercel/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- Editors / OS ----------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+*.lnk
+
+# ---------- Misc ----------
+*.log
+tmp/

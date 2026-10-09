@@ -1,0 +1,57 @@
+# Render Blueprint - CampusCoin (College Reward Points) backend
+# Deploy: Render Dashboard -> New -> Blueprint -> select this repo.
+# Every `sync: false` variable is prompted for in the dashboard and is NEVER stored in git.
+services:
+  - type: web
+    name: campuscoin-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+      # --- Supabase (Postgres via pooler + Auth) ---
+      - key: DATABASE_URL          # Supabase pooler connection string (contains DB password)
+        sync: false
+      - key: SUPABASE_URL
+        value: https://pzcimxioslwojjjotrde.supabase.co
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+      # --- App / CORS ---
+      - key: FRONTEND_ORIGINS      # comma list, e.g. https://<app>.vercel.app,http://localhost:3000
+        sync: false
+      - key: ADMIN_EMAILS          # comma list of admin Google accounts
+        sync: false
+
+      # --- Chain (Sepolia) ---
+      - key: SEPOLIA_RPC_URL
+        value: https://ethereum-sepolia-rpc.publicnode.com
+      - key: CHAIN_ID
+        value: "11155111"
+      - key: CONTRACT_ADDRESS      # from blockchain/deployments/sepolia.json
+        sync: false
+      - key: CONTRACT_DEPLOY_BLOCK # from blockchain/deployments/sepolia.json
+        sync: false
+
+      # --- Optional Sepolia gas drip for students without test ETH ---
+      - key: GAS_DRIP_PRIVATE_KEY  # leave empty to disable the drip
+        sync: false
+      - key: GAS_DRIP_AMOUNT_ETH
+        value: "0.005"
+      - key: GAS_DRIP_MIN_BALANCE_ETH
+        value: "0.002"
+
+      # --- Groq AI (reward advisor + assistant chat) ---
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
